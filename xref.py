@@ -17,6 +17,7 @@ executable_name = sys.argv[1]
 # and save to text file              #
 ######################################
 
+
 f = open('objdump.txt', 'w')
 call(["objdump", "-d", executable_name], stdout=f)
 f.close()
@@ -25,13 +26,14 @@ f = open('dwarfdump.txt', 'w')
 call(["dwarfdump", executable_name], stdout=f)
 f.close()
 
+
 ###################
 # Process objdump #
 ###################
 
 # dictionary of the form:
-# {<subprogram_name> : [[<op_code>, <optional_instruction_tail>], ...]}
-subprogram_asm = {}
+# {<pc> : [<op_code>, <optional_instruction_tail>]}
+assembly = {}
 
 # example pattern: '0000000000400470 <main>:'
 subprogram_head_pattern = re.compile("(\d|a|b|c|d|e|f){16} <.+>:")
@@ -40,17 +42,12 @@ subprogram_head_pattern = re.compile("(\d|a|b|c|d|e|f){16} <.+>:")
 # set to true after a subprogram head is matched
 # set to false after the end of a subprogram body is found
 subprogram_body = False
-# name of the subprogram being read
-subprogram_name = ""
 
 with open('objdump.txt', 'r') as objdump_file:
     for line in objdump_file:
         
         # if line matches subprogram_head_pattern
         if subprogram_head_pattern.match(line):
-            # extract the function name by splitting by the '<' and '>'
-            subprogram_name = re.split('<|>', line)[1]
-            subprogram_asm[subprogram_name] = []
             # set flag to True
             subprogram_body = True
             
@@ -69,17 +66,23 @@ with open('objdump.txt', 'r') as objdump_file:
 
                 # split line by tabs
                 split_by_tabs = re.split('\t', line)
-                # if there are 2 tabs (1st format above)
+
+                # extract pc value by eliminating whitespace and colon
+                pc = re.sub("[ :]", "", split_by_tabs[0])
+                
+                # if there are 2 tabs (1st format in comment above)
                 if len(split_by_tabs) == 3:
                     # extract part after second tab
                     instruction = split_by_tabs[2]
+                    # split by white space
                     instruction = re.split('\s+', instruction)
                     # now extract just opcode and tail (if there is one)
                     if len(instruction) < 3:
                         instruction = instruction[:1]
                     else:
                         instruction = instruction[:2]
+                        
                     # add instruction to dictionary
-                    subprogram_asm[subprogram_name].append(instruction)
+                    assembly[pc] = instruction
                     
-print(subprogram_asm)                    
+print(assembly)                    

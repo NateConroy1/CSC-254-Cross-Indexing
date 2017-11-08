@@ -17,7 +17,7 @@ executable_name = sys.argv[1]
 # and save to text file              #
 ######################################
 
-
+'''
 f = open('objdump.txt', 'w')
 call(["objdump", "-d", executable_name], stdout=f)
 f.close()
@@ -25,7 +25,7 @@ f.close()
 f = open('dwarfdump.txt', 'w')
 call(["dwarfdump", executable_name], stdout=f)
 f.close()
-
+'''
 
 ###################
 # Process objdump #
@@ -43,7 +43,7 @@ subprogram_head_pattern = re.compile("(\d|a|b|c|d|e|f){16} <.+>:")
 # set to false after the end of a subprogram body is found
 subprogram_body = False
 
-with open('objdump.txt', 'r') as objdump_file:
+with open('objdump2.txt', 'r') as objdump_file:
     for line in objdump_file:
         
         # if line matches subprogram_head_pattern
@@ -68,7 +68,8 @@ with open('objdump.txt', 'r') as objdump_file:
                 split_by_tabs = re.split('\t', line)
 
                 # extract pc value by eliminating whitespace and colon
-                pc = re.sub("[ :]", "", split_by_tabs[0])
+                # and convert from hex to integer
+                pc = int(re.sub("[ :]", "", split_by_tabs[0]), 16)
                 
                 # if there are 2 tabs (1st format in comment above)
                 if len(split_by_tabs) == 3:
@@ -108,7 +109,7 @@ current_uri = ""
 # regex pattern to match uri in string
 uri_pattern = "uri: \"(.+)\""
 
-with open('dwarfdump.txt', 'r') as dwarfdump_file:
+with open('dwarfdump2.txt', 'r') as dwarfdump_file:
     for line in dwarfdump_file:
         
         # if line matches the header of the table containing pc values and source code line numbers
@@ -124,8 +125,8 @@ with open('dwarfdump.txt', 'r') as dwarfdump_file:
             else:
                 # process the data and add it to the dictionary
 
-                # extract the pc value
-                pc = line.split()[0]
+                # extract the pc value, convert from hex to integer
+                pc = int(line.split()[0], 0)
 
                 # if the line contains a uri, update current_uri
                 uri = re.search(uri_pattern, line)
@@ -141,3 +142,18 @@ with open('dwarfdump.txt', 'r') as dwarfdump_file:
                 pc_source_code_mapping[pc] = [current_uri, line_number]
 
 dwarfdump_file.close()
+
+##################################
+# Pair assembly with source code #
+##################################
+
+# create list of chunks, where chunks contain list of souce code and list of assembly
+# list of the form:
+# [ [[<source code lines>], [<assembly instructions>]], ...]
+program = []
+
+# get a list of the dwarfdump keys
+dwarfdump_keys = list(pc_source_code_mapping.keys())
+# sort the keys in ascending order
+dwarfdump_keys.sort(reverse = False)
+

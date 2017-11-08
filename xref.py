@@ -32,7 +32,7 @@ f.close()
 ###################
 
 # dictionary of the form:
-# {<pc> : [<op_code>, <optional_instruction_tail>]}
+# {<pc> : [<op code>, <optional instruction tail>]}
 assembly = {}
 
 # example pattern: '0000000000400470 <main>:'
@@ -84,5 +84,60 @@ with open('objdump.txt', 'r') as objdump_file:
                         
                     # add instruction to dictionary
                     assembly[pc] = instruction
+
+objdump_file.close()
                     
-print(assembly)                    
+#####################
+# Process dwarfdump #
+#####################
+
+# dictionary of the form:
+# {<pc> : [<file uri>, <line number>]}
+pc_source_code_mapping = {}
+
+# every file should have this line
+pc_source_table_header = "<pc>        [lno,col] NS BB ET PE EB IS= DI= uri: \"filepath\"\n"
+
+# flag for whether the line is within the table body
+# set to true after header is matched
+# set to false after the end of the table is found
+within_table = False
+
+# string representing the uri of the table line in focus
+current_uri = ""
+# regex pattern to match uri in string
+uri_pattern = "uri: \"(.+)\""
+
+with open('dwarfdump.txt', 'r') as dwarfdump_file:
+    for line in dwarfdump_file:
+        
+        # if line matches the header of the table containing pc values and source code line numbers
+        if line == pc_source_table_header:
+            # set flag to true
+            within_table = True
+
+        # if the line is within the table
+        elif within_table is True:
+            # if the end of the table is found, set flag to False
+            if line == '\n':
+                within_table = False
+            else:
+                # process the data and add it to the dictionary
+
+                # extract the pc value
+                pc = line.split()[0]
+
+                # if the line contains a uri, update current_uri
+                uri = re.search(uri_pattern, line)
+                if uri:
+                    current_uri = uri.group(1)
+
+                # extract just the line and col
+                line_col = re.sub(" +", "", re.split('\[|\]', line)[1])
+                # extract the line number
+                line_number = line_col.split(',')[0]
+
+                # add to dictionary
+                pc_source_code_mapping[pc] = [current_uri, line_number]
+
+dwarfdump_file.close()

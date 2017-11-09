@@ -32,7 +32,7 @@ f.close()
 ###################
 
 # dictionary of the form:
-# {<pc> : [<op code>, <optional instruction tail>]}
+# {<pc> : [[<op code>, <optional instruction tail>], <last instruction flag>]}
 assembly = {}
 
 # example pattern: '0000000000400470 <main>:'
@@ -42,6 +42,10 @@ subprogram_head_pattern = re.compile("(\d|a|b|c|d|e|f){16} <.+>:")
 # set to true after a subprogram head is matched
 # set to false after the end of a subprogram body is found
 subprogram_body = False
+
+# used to flag an instruction as the last in a subprogram block
+# when the newline character is found
+previous_pc = -1
 
 with open('objdump2.txt', 'r') as objdump_file:
     for line in objdump_file:
@@ -56,6 +60,7 @@ with open('objdump2.txt', 'r') as objdump_file:
             # if the current line is the end of the body, set the flag to False
             if line == '\n':
                 subprogram_body = False
+                assembly[previous_pc][1] = True
             else:
                 # add assembly to dictionary
 
@@ -84,7 +89,8 @@ with open('objdump2.txt', 'r') as objdump_file:
                         instruction = instruction[:2]
                         
                     # add instruction to dictionary
-                    assembly[pc] = instruction
+                    assembly[pc] = [instruction, False]
+                    previous_pc = pc
 
 objdump_file.close()
                     
@@ -93,7 +99,7 @@ objdump_file.close()
 #####################
 
 # dictionary of the form:
-# {<pc> : [<file uri>, <line number>]}
+# {<pc> : [<file uri>, [<line numbers>], [<tags>]}
 pc_source_code_mapping = {}
 
 # every file should have this line
@@ -107,7 +113,7 @@ within_table = False
 # string representing the uri of the table line in focus
 current_uri = ""
 # regex pattern to match uri in string
-uri_pattern = "uri: \"(.+)\""
+uri_pattern = " uri: \"(.+)\""
 
 with open('dwarfdump2.txt', 'r') as dwarfdump_file:
     for line in dwarfdump_file:
@@ -133,13 +139,28 @@ with open('dwarfdump2.txt', 'r') as dwarfdump_file:
                 if uri:
                     current_uri = uri.group(1)
 
+                tags = []
+                # if the line contains extra tags, extract those
+                tag_match = re.search("( [A-Z]{2})+", line)
+                if tag_match:
+                    tags = tag_match.group(0).split()
+
                 # extract just the line and col
                 line_col = re.sub(" +", "", re.split('\[|\]', line)[1])
                 # extract the line number
                 line_number = line_col.split(',')[0]
-
-                # add to dictionary
-                pc_source_code_mapping[pc] = [current_uri, line_number]
+                
+                # if the key already exists
+                if pc in pc_source_code_mapping:
+                    # append the line number to the list
+                    pc_source_code_mapping[pc][1].append(line_number)
+                    # append the tags to the list
+                    for tag in tags:
+                        if tag not in pc_source_code_mapping[pc][2]:
+                            pc_source_code_mapping[pc][2].append(tag)
+                else:
+                    # add entry to dictionary
+                    pc_source_code_mapping[pc] = [current_uri, [line_number], tags]
 
 dwarfdump_file.close()
 
@@ -152,8 +173,74 @@ dwarfdump_file.close()
 # [ [[<source code lines>], [<assembly instructions>]], ...]
 program = []
 
+# get a list of the objdump keys
+objdump_keys = list(assembly.keys())
+# sort the keys in ascending order
+objdump_keys.sort(reverse = False)
+
 # get a list of the dwarfdump keys
 dwarfdump_keys = list(pc_source_code_mapping.keys())
 # sort the keys in ascending order
 dwarfdump_keys.sort(reverse = False)
 
+# declare a variable to hold the next dwarfdump pc value
+next_pc = dwarfdump_keys[0]
+
+# declare a dictionary to hold the next lines for each file
+# format: { <file path> : <next line> }
+next_lines = {}
+
+# ****** EDGE CASES ****** #
+# same pc, multiple file numbers in dwarfdump
+# ET, add to current not next
+
+# boolean flag used to skip pc
+# this is used when we see an ET to skip ahead to the next block
+skip_next = False
+
+for pc in dwarfdump_keys:
+
+    # if flag is True, skip this pc
+    if skip_next:
+        skip_next = False
+        continue
+    
+    # declare new chunk
+    # format: [[<source code lines>], [<assembly instructions>]]
+    chunk = [[], []]
+
+    # add all assembly
+
+    dd_pc_index = dwarfdump_keys.index(pc)
+    # if the current dwarfdump instruction is the last, just add it
+    if dd_pc_index == len(dwarfdump_keys) - 1:
+        chunk[1].append(assembly[next_pc][0])
+    else:
+        # while the next pc in objdump is not the next pc in dwarfdump
+        # add the instruction to the block and move on to the next pc
+        while next_pc != dwarfdump_keys[dd_pc_index + 1]:
+            chunk[1].append(assembly[next_pc][0])
+            next_pc_index = objdump_keys.index(next_pc)
+            next_pc = objdump_keys[next_pc_index + 1]
+        # if the next_pc has the tag ET
+        if "ET" in pc_source_code_mapping[next_pc][2]:
+            # while the instruction is not the last in a subprogram
+            # add the instruction and move to the next pc
+            while assembly[next_pc][1] is False:
+                chunk[1].append(assembly[next_pc][0])
+                next_pc_index = objdump_keys.index(next_pc)
+                next_pc = objdump_keys[next_pc_index + 1]
+            chunk[1].append(assembly[next_pc][0])
+            if dd_pc_index + 2 != len(dwarfdump_keys):
+                next_pc = dwarfdump_keys[dd_pc_index + 2]
+            # skip the next pc
+            skip_next = True
+
+    # add all source code
+
+    
+
+    # append chunk to program
+    program.append(chunk)
+        
+print(program)

@@ -21,7 +21,6 @@ executable_name = sys.argv[1]
 # and save to text file              #
 ######################################
 
-'''
 f = open('objdump.txt', 'w')
 call(["objdump", "-d", executable_name], stdout=f)
 f.close()
@@ -29,7 +28,6 @@ f.close()
 f = open('dwarfdump.txt', 'w')
 call(["dwarfdump", executable_name], stdout=f)
 f.close()
-'''
 
 ###################
 # Process objdump #
@@ -51,7 +49,7 @@ subprogram_body = False
 # when the newline character is found
 previous_pc = -1
 
-with open('objdump2.txt', 'r') as objdump_file:
+with open('objdump.txt', 'r') as objdump_file:
     for line in objdump_file:
 
         # if line matches subprogram_head_pattern
@@ -119,7 +117,7 @@ current_uri = ""
 # regex pattern to match uri in string
 uri_pattern = " uri: \"(.+)\""
 
-with open('dwarfdump2.txt', 'r') as dwarfdump_file:
+with open('dwarfdump.txt', 'r') as dwarfdump_file:
     for line in dwarfdump_file:
 
         # if line matches the header of the table containing pc values and source code line numbers
@@ -190,13 +188,11 @@ dwarfdump_keys.sort(reverse = False)
 # declare a variable to hold the next dwarfdump pc value
 next_pc = dwarfdump_keys[0]
 
-# declare a dictionary to hold the next lines for each file
+# dictionary to hold the next lines for each file
 # format: { <file path> : <next line> }
-next_lines = {}
-
-# ****** EDGE CASES ****** #
-# same pc, multiple file numbers in dwarfdump
-# ET, add to current not next
+read_lines = {}
+# dictionary to hold the source code for each file
+source_code = {}
 
 # boolean flag used to skip pc
 # this is used when we see an ET to skip ahead to the next block
@@ -242,7 +238,42 @@ for pc in dwarfdump_keys:
 
     # add all source code
 
+    file_path = pc_source_code_mapping[pc][0]
 
+    # if it is the first time we've seen the file
+    if file_path not in read_lines:
+        # read the file and save the source code
+        f = open(file_path, 'r')
+        source_code[file_path] = f.readlines()
+        read_lines[file_path] = []
+
+    # convert list of strings to ints
+    line_nums = list(map(int, pc_source_code_mapping[pc][1]))
+    # get the minimum line number already added
+    line_number = max(line_nums)
+
+    function_header_regex = re.compile(r'((\w)+( )+)+(\w)+( )*\((.)*\)( )*{')
+
+    continue_loop = True
+    while continue_loop:
+
+        # if previous dwarfdump contains line number, break
+        previous_pc = dwarfdump_keys[dd_pc_index - 1]
+        if dd_pc_index != 0 and str(line_number) in pc_source_code_mapping[previous_pc][1]:
+            continue_loop = False
+            break
+
+        # if first line of file is reached, don't continue
+        if line_number == 1:
+            continue_loop = False
+
+        # if function header is reached
+        source_line = source_code[file_path][line_number - 1]
+        if function_header_regex.search(source_line):
+            continue_loop = False
+
+        chunk[0].append(source_code[file_path][line_number-1])
+        line_number = line_number - 1
 
     # append chunk to program
     program.append(chunk)
@@ -305,7 +336,7 @@ for i in range(len(program)):
 
          # make assembly line up with final source line
          if len(program[i][0])-len(program[i][1]) < 0:
-             for k in range(abs(len(program[i][0])-len(program[i][1]))):
+            for k in range(abs(len(program[i][0])-len(program[i][1]))):
                  cross_indexing.write("<br>")
 
          # indent appropriately

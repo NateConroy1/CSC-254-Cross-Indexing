@@ -292,6 +292,8 @@ f.write("""
 for i in range(len(program)):
      f.write("<tr><td>")
 
+     # start with no indentations
+     numIndents = 0
      # write the source code
      for j in range(len(program[i][0])):
 
@@ -300,11 +302,14 @@ for i in range(len(program)):
              for k in range(abs(len(program[i][0])-len(program[i][1]))):
                  f.write("<br>")
 
-         # for each line of source code
-         for k in range(len(program[i][0][j])):
-             f.write(program[i][0][j][k]+" ")
+         # indent appropriately
+         for k in range(numIndents):
+             f.write("/t")
+         if program[i][0][j][-1] == "{":
+            numIndents += 1
 
-         f.write("<br>")
+         # for each line of source code
+         f.write(program[i][0][j]+"<br>")
 
      f.write("</td><td>")
 

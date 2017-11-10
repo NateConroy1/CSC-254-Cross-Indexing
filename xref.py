@@ -1,6 +1,10 @@
-import sys
+import datetime
+import os
 import re
+import sys
 from subprocess import call
+
+timeRan = str(datetime.datetime.now())
 
 ##############################
 # Get command line arguments #
@@ -245,14 +249,16 @@ for pc in dwarfdump_keys:
 
 print(program)
 
+##############################
+# CREATE CROSS_INDEXING.HTML #
+##############################
 
-
-f= open("assembly.html","w+")
-f.write("""
+cross_indexing = open("html/cross_indexing.html","w+")
+cross_indexing.write("""
     <!DOCTYPE html>
     <html>
         <head>
-            <title>CSC254 A4 (Sherman+Conroy)</title>
+            <title>CSC_254 A4</title>
             <style type="text/css">
 
                 * {
@@ -286,11 +292,11 @@ f.write("""
         <body>
             <table>""")
 
-
+control_transfer = ["jmp", "je", "jne", "jz", "jg", "jge", "jl", "jle", "callq"]
 
 # iterate through each section
 for i in range(len(program)):
-     f.write("<tr><td>")
+     cross_indexing.write("<tr><td>")
 
      # start with no indentations
      numIndents = 0
@@ -300,18 +306,18 @@ for i in range(len(program)):
          # make assembly line up with final source line
          if len(program[i][0])-len(program[i][1]) < 0:
              for k in range(abs(len(program[i][0])-len(program[i][1]))):
-                 f.write("<br>")
+                 cross_indexing.write("<br>")
 
          # indent appropriately
          for k in range(numIndents):
-             f.write("/t")
+             cross_indexing.write("/t")
          if program[i][0][j][-1] == "{":
             numIndents += 1
 
          # for each line of source code
-         f.write(program[i][0][j]+"<br>")
+         cross_indexing.write(program[i][0][j]+"<br>")
 
-     f.write("</td><td>")
+     cross_indexing.write("</td><td>")
 
      # write the assembly code
      for j in range(len(program[i][1])):
@@ -319,15 +325,62 @@ for i in range(len(program)):
          # make source line up with final assembly line
          if len(program[i][1])-len(program[i][0]) < 0:
              for k in range(abs(len(program[i][1])-len(program[i][0]))):
-                 f.write("<br>")
+                 cross_indexing.write("<br>")
 
-         #for each line of assembly code
-         for k in range(len(program[i][1][j])):
-             f.write(program[i][1][j][k]+" ")
+         # create div for pc
+         cross_indexing.write("<div id=\""+str(program[i][1][j][0])+"\">")
 
-         f.write("<br>")
+         # link for every fixed-address control transfer (branch or subroutine call)
+         if program[i][1][j][1] in control_transfer:
+             cross_indexing.write("<a href=#"+program[i][1][j][2]+">")
 
-     f.write("</td></tr>")
+         # for each line of assembly code
+         for k in range(1, len(program[i][1][j])):
+             cross_indexing.write(program[i][1][j][k]+" ")
 
-f.write("</table></body></html>")
-f.close()
+         if program[i][1][j][1] in control_transfer:
+             cross_indexing.write("</a>")
+
+         cross_indexing.write("</div>")
+
+     cross_indexing.write("</td></tr>")
+
+cross_indexing.write("</table></body></html>")
+cross_indexing.close()
+
+#####################
+# CREATE INDEX.HTML #
+#####################
+
+path = os.path.dirname(os.path.realpath(__file__))
+index = open("html/index.html","w+")
+index.write("""
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Index: CSC_254 A4</title>
+            <style type="text/css">
+
+                * {
+                    font-family: monospace;
+                    line-height: 1.5em;
+                }
+
+            </style>
+        </head>
+        <body>
+            <h1>Cross Indexing<h1>
+            <h2>CSC_254 Assignment 4</h2>
+            <h3>Luka Sherman and Nathan Conroy</h3>
+            <h3>University of Rochester Fall 2017</h3>
+            <hr><br><br>
+            <em>xref Run Time: </em>"""+timeRan+"""<br>
+            <em>xref Run Location: </em>"""+path+ """<br>
+            <br><br>
+            <a href="cross_indexing.html">Link to Cross Indexing file with source and assembly</a><br>
+            <a href="cross_indexing.html#main">Link to "main" location in cross indexing in file</a>
+        </body>
+    </html>
+            """)
+
+index.close()

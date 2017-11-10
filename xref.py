@@ -288,26 +288,29 @@ f.write("""
 
 # iterate through each section
 for i in range(len(program)):
-     f.write("<tr>")
+     f.write("<tr><td>")
 
-     f.write("<td>")
-     # for the assembly code
+     # write the source code
      for j in range(len(program[i][1])):
+
+         # for each line of source code
          for k in range(len(program[i][1][j])):
              f.write(program[i][1][j][k]+" ")
-         f.write("<br>")
-             #f.write("hi\n")
-     f.write("</td>")
 
-     a_length = len(program[i][1])
-     f.write("<td>")
-     # for the assembly code
+         f.write("<br>")
+
+     f.write("</td><td>")
+
+     # write the assembly code
      for j in range(len(program[i][1])):
+
+         #for each line of assembly code
          for k in range(len(program[i][1][j])):
              f.write(program[i][1][j][k]+" ")
+
          f.write("<br>")
-     f.write("</td>")
-     f.write("</tr>")
+
+     f.write("</td></tr>")
 
 f.write("</table></body></html>")
 f.close()

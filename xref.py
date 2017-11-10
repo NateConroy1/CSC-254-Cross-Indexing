@@ -193,6 +193,8 @@ next_pc = dwarfdump_keys[0]
 read_lines = {}
 # dictionary to hold the source code for each file
 source_code = {}
+# dictionary of function headers
+function_headers = {}
 
 # boolean flag used to skip pc
 # this is used when we see an ET to skip ahead to the next block
@@ -240,27 +242,38 @@ for pc in dwarfdump_keys:
 
     file_path = pc_source_code_mapping[pc][0]
 
+    function_header_regex = re.compile(r'((\w)+( )+)+(\w)+( )*\((.)*\)( )*{')
+
     # if it is the first time we've seen the file
     if file_path not in read_lines:
         # read the file and save the source code
         f = open(file_path, 'r')
         source_code[file_path] = f.readlines()
         read_lines[file_path] = []
+        function_headers[file_path] = []
+        for line in source_code[file_path]:
+            if function_header_regex.search(line):
+                function_headers[file_path].append(line)
 
     # convert list of strings to ints
     line_nums = list(map(int, pc_source_code_mapping[pc][1]))
     # get the minimum line number already added
     line_number = max(line_nums)
 
-    function_header_regex = re.compile(r'((\w)+( )+)+(\w)+( )*\((.)*\)( )*{')
-
     continue_loop = True
     while continue_loop:
 
-        # if previous dwarfdump contains line number, break
-        previous_pc = dwarfdump_keys[dd_pc_index - 1]
-        if dd_pc_index != 0 and str(line_number) in pc_source_code_mapping[previous_pc][1]:
-            continue_loop = False
+        break_while = False
+
+        # if any previous dwarfdump contains line number, break
+        for previous_pc in dwarfdump_keys:
+            if previous_pc == pc:
+                break
+            if str(line_number) in pc_source_code_mapping[previous_pc][1]:
+                continue_loop = False
+                break_while = True
+                break
+        if break_while:
             break
 
         # if first line of file is reached, don't continue
@@ -269,14 +282,21 @@ for pc in dwarfdump_keys:
 
         # if function header is reached
         source_line = source_code[file_path][line_number - 1]
-        if function_header_regex.search(source_line):
+        if source_line in function_headers[file_path]:
             continue_loop = False
+            # if it is first function header, continue
+            if function_headers[file_path].index(source_line) == 0:
+                continue_loop = True
 
         chunk[0].append(source_code[file_path][line_number-1])
         line_number = line_number - 1
 
     # append chunk to program
     program.append(chunk)
+
+# reverse the order of the source code
+for i in range(len(program)):
+    program[i][0].reverse()
 
 print(program)
 

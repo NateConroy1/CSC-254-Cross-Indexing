@@ -330,14 +330,18 @@ for i in range(len(program)):
          # create div for pc
          cross_indexing.write("<div id=\""+str(program[i][1][j][0])+"\">")
 
-         # link for every fixed-address control transfer (branch or subroutine call)
+         # convert pc to hex and format correctly
+         pc = hex(program[i][1][j][0])[2:].lstrip('0')
+
+         # anchor tag for every fixed-address control transfer (branch or subroutine call)
          if program[i][1][j][1] in control_transfer:
-             cross_indexing.write("<a href=#"+program[i][1][j][2]+">")
+             cross_indexing.write("<a href=#"+pc+">")
 
          # for each line of assembly code
          for k in range(1, len(program[i][1][j])):
              cross_indexing.write(program[i][1][j][k]+" ")
 
+         # if control transfer, close anchor tag
          if program[i][1][j][1] in control_transfer:
              cross_indexing.write("</a>")
 
@@ -374,8 +378,8 @@ index.write("""
             <h3>Luka Sherman and Nathan Conroy</h3>
             <h3>University of Rochester Fall 2017</h3>
             <hr><br><br>
-            <em>xref Run Time: </em>"""+timeRan+"""<br>
-            <em>xref Run Location: </em>"""+path+ """<br>
+            <strong>xref Run Time: </strong>"""+timeRan+"""<br>
+            <strong>xref Run Location: </strong>"""+path+ """<br>
             <br><br>
             <a href="cross_indexing.html">Link to Cross Indexing file with source and assembly</a><br>
             <a href="cross_indexing.html#main">Link to "main" location in cross indexing in file</a>

@@ -32,7 +32,7 @@ f.close()
 ###################
 
 # dictionary of the form:
-# {<pc> : [[<op code>, <optional instruction tail>], <last instruction flag>]}
+# {<pc> : [[<pc>, <op code>, <optional instruction tail>], <last instruction flag>]}
 assembly = {}
 
 # example pattern: '0000000000400470 <main>:'
@@ -89,7 +89,7 @@ with open('objdump2.txt', 'r') as objdump_file:
                         instruction = instruction[:2]
 
                     # add instruction to dictionary
-                    assembly[pc] = [instruction, False]
+                    assembly[pc] = [[pc] + instruction, False]
                     previous_pc = pc
 
 objdump_file.close()

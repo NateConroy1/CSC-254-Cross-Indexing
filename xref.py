@@ -286,16 +286,23 @@ f.write("""
         <body>
             <table>""")
 
+
+
 # iterate through each section
 for i in range(len(program)):
      f.write("<tr><td>")
 
      # write the source code
-     for j in range(len(program[i][1])):
+     for j in range(len(program[i][0])):
+
+         # make assembly line up with final source line
+         if len(program[i][0])-len(program[i][1]) < 0:
+             for k in range(abs(len(program[i][0])-len(program[i][1]))):
+                 f.write("<br>")
 
          # for each line of source code
-         for k in range(len(program[i][1][j])):
-             f.write(program[i][1][j][k]+" ")
+         for k in range(len(program[i][0][j])):
+             f.write(program[i][0][j][k]+" ")
 
          f.write("<br>")
 
@@ -303,6 +310,11 @@ for i in range(len(program)):
 
      # write the assembly code
      for j in range(len(program[i][1])):
+
+         # make source line up with final assembly line
+         if len(program[i][1])-len(program[i][0]) < 0:
+             for k in range(abs(len(program[i][1])-len(program[i][0]))):
+                 f.write("<br>")
 
          #for each line of assembly code
          for k in range(len(program[i][1][j])):

@@ -49,12 +49,12 @@ previous_pc = -1
 
 with open('objdump2.txt', 'r') as objdump_file:
     for line in objdump_file:
-        
+
         # if line matches subprogram_head_pattern
         if subprogram_head_pattern.match(line):
             # set flag to True
             subprogram_body = True
-            
+
         # if the end of a subprogram's body has not yet been found
         elif subprogram_body is True:
             # if the current line is the end of the body, set the flag to False
@@ -75,7 +75,7 @@ with open('objdump2.txt', 'r') as objdump_file:
                 # extract pc value by eliminating whitespace and colon
                 # and convert from hex to integer
                 pc = int(re.sub("[ :]", "", split_by_tabs[0]), 16)
-                
+
                 # if there are 2 tabs (1st format in comment above)
                 if len(split_by_tabs) == 3:
                     # extract part after second tab
@@ -87,13 +87,13 @@ with open('objdump2.txt', 'r') as objdump_file:
                         instruction = instruction[:1]
                     else:
                         instruction = instruction[:2]
-                        
+
                     # add instruction to dictionary
                     assembly[pc] = [instruction, False]
                     previous_pc = pc
 
 objdump_file.close()
-                    
+
 #####################
 # Process dwarfdump #
 #####################
@@ -117,7 +117,7 @@ uri_pattern = " uri: \"(.+)\""
 
 with open('dwarfdump2.txt', 'r') as dwarfdump_file:
     for line in dwarfdump_file:
-        
+
         # if line matches the header of the table containing pc values and source code line numbers
         if line == pc_source_table_header:
             # set flag to true
@@ -149,7 +149,7 @@ with open('dwarfdump2.txt', 'r') as dwarfdump_file:
                 line_col = re.sub(" +", "", re.split('\[|\]', line)[1])
                 # extract the line number
                 line_number = line_col.split(',')[0]
-                
+
                 # if the key already exists
                 if pc in pc_source_code_mapping:
                     # append the line number to the list
@@ -204,7 +204,7 @@ for pc in dwarfdump_keys:
     if skip_next:
         skip_next = False
         continue
-    
+
     # declare new chunk
     # format: [[<source code lines>], [<assembly instructions>]]
     chunk = [[], []]
@@ -238,9 +238,76 @@ for pc in dwarfdump_keys:
 
     # add all source code
 
-    
+
 
     # append chunk to program
     program.append(chunk)
-        
+
 print(program)
+
+
+
+f= open("assembly.html","w+")
+f.write("""
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>CSC254 A4 (Sherman+Conroy)</title>
+            <style type="text/css">
+
+                * {
+                    font-family: monospace;
+                    line-height: 1.5em;
+                }
+
+                table {
+                    width: 100%;
+                }
+
+                td
+                {
+                    padding: 8px;
+                    border-bottom: 2px solid black;
+                    vertical-align: bottom;
+                    width: 50%;
+                }
+
+                th
+                {
+                    border: 1px solid black;
+                }
+
+                .grey {
+                    color: #888
+                }
+
+            </style>
+        </head>
+        <body>
+            <table>""")
+
+# iterate through each section
+for i in range(len(program)):
+     f.write("<tr>")
+
+     f.write("<td>")
+     # for the assembly code
+     for j in range(len(program[i][1])):
+         for k in range(len(program[i][1][j])):
+             f.write(program[i][1][j][k]+" ")
+         f.write("<br>")
+             #f.write("hi\n")
+     f.write("</td>")
+
+     a_length = len(program[i][1])
+     f.write("<td>")
+     # for the assembly code
+     for j in range(len(program[i][1])):
+         for k in range(len(program[i][1][j])):
+             f.write(program[i][1][j][k]+" ")
+         f.write("<br>")
+     f.write("</td>")
+     f.write("</tr>")
+
+f.write("</table></body></html>")
+f.close()

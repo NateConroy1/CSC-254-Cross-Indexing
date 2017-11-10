@@ -9,7 +9,7 @@ Run `python3 xref.py example/primes`
 
 ### If developing locally:
 You're going to need to run the code on the CSUG machines first in order to get the proper 'objdump.txt' and 'dwarfdump.txt' files. Follow those instructions first.<br><br>
-Copy over 'objdump.txt' and 'dwarfdump.txt' from the CSUG machine and paste them in you local 'CSC-254-Cross-Indexing' directory.<br><br>
+Copy over 'objdump.txt' and 'dwarfdump.txt' from the CSUG machine and paste them in your local 'CSC-254-Cross-Indexing' directory.<br><br>
 **Important: Comment out everything in the section with the comment 'Run external objdump and dwarfdump and save to text file' in xref.py**. This will stop the program from overwriting the 'objdump.txt' and 'dwarfdump.txt' files you just copied over.<br>
 ```
 '''

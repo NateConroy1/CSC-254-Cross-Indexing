@@ -392,15 +392,15 @@ for i in range(len(program)):
      # write the assembly code
      for j in range(len(program[i][1])):
 
-         # create div for pc
-         cross_indexing.write("<div id=\""+str(program[i][1][j][0])+"\">")
-
          # convert pc to hex and format correctly
          pc = hex(program[i][1][j][0])[2:].lstrip('0')
 
+         # create div for pc
+         cross_indexing.write("<div id=\""+pc+"\">")
+
          # anchor tag for every fixed-address control transfer (branch or subroutine call)
          if program[i][1][j][1] in control_transfer:
-             cross_indexing.write("<a href=#"+pc+">")
+             cross_indexing.write("<a href=#"+program[i][1][j][-1]+">")
 
          # for each line of assembly code
          for k in range(1, len(program[i][1][j])):

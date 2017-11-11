@@ -313,8 +313,6 @@ for pc in dwarfdump_keys:
 for i in range(len(program)):
     program[i][0].reverse()
 
-print(program)
-
 ##############################
 # CREATE CROSS_INDEXING.HTML #
 ##############################

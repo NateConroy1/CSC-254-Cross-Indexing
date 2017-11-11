@@ -178,7 +178,7 @@ program = []
 # get a list of the objdump keys
 objdump_keys = list(assembly.keys())
 # sort the keys in ascending order
-objdump_keys.sort(reverse = False)
+objdump_keys.sort(reverse=False)
 
 # get a list of the dwarfdump keys
 dwarfdump_keys = list(pc_source_code_mapping.keys())
@@ -260,7 +260,21 @@ for pc in dwarfdump_keys:
     # get the minimum line number already added
     line_number = max(line_nums)
 
+    # add the file number that is seen in the dwarfdump entry
+    chunk[0].append(source_code[file_path][line_number - 1])
+
     continue_loop = True
+
+    # if function header is reached
+    source_line = source_code[file_path][line_number - 1]
+    if source_line in function_headers[file_path]:
+        continue_loop = False
+        # if it is first function header, continue
+        if function_headers[file_path].index(source_line) == 0:
+            continue_loop = True
+
+    line_number = line_number - 1
+
     while continue_loop:
 
         break_while = False
@@ -277,8 +291,9 @@ for pc in dwarfdump_keys:
             break
 
         # if first line of file is reached, don't continue
-        if line_number == 1:
+        if line_number == 0:
             continue_loop = False
+            break
 
         # if function header is reached
         source_line = source_code[file_path][line_number - 1]
@@ -349,34 +364,33 @@ control_transfer = ["jmp", "je", "jne", "jz", "jg", "jge", "jl", "jle", "callq"]
 for i in range(len(program)):
      cross_indexing.write("<tr><td>")
 
+     # make assembly line up with final source line
+     if len(program[i][0]) - len(program[i][1]) < 0:
+         for k in range(abs(len(program[i][0]) - len(program[i][1]))):
+             cross_indexing.write("<br>")
+
      # start with no indentations
      numIndents = 0
      # write the source code
      for j in range(len(program[i][0])):
 
-         # make assembly line up with final source line
-         if len(program[i][0])-len(program[i][1]) < 0:
-            for k in range(abs(len(program[i][0])-len(program[i][1]))):
-                 cross_indexing.write("<br>")
-
          # indent appropriately
          for k in range(numIndents):
-             cross_indexing.write("/t")
-         if program[i][0][j][-1] == "{":
-            numIndents += 1
+             cross_indexing.write("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+         if len(program[i][0][j]) >= 2 and program[i][0][j][-2] == "{":
+             numIndents += 1
 
-         # for each line of source code
          cross_indexing.write(program[i][0][j]+"<br>")
 
      cross_indexing.write("</td><td>")
 
+     # make source line up with final assembly line
+     if len(program[i][1]) - len(program[i][0]) < 0:
+         for k in range(abs(len(program[i][1]) - len(program[i][0]))):
+             cross_indexing.write("<br>")
+
      # write the assembly code
      for j in range(len(program[i][1])):
-
-         # make source line up with final assembly line
-         if len(program[i][1])-len(program[i][0]) < 0:
-             for k in range(abs(len(program[i][1])-len(program[i][0]))):
-                 cross_indexing.write("<br>")
 
          # create div for pc
          cross_indexing.write("<div id=\""+str(program[i][1][j][0])+"\">")

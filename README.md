@@ -1,6 +1,8 @@
 # CSC-254-Cross-Indexing
 CSC 254 A4
 
+This repository is the ownership of Nate Conroy and Luka Sherman and has been made public for my personal portfolio. It may not be used to violate academic honesty policies.
+
 ## Run Instructions
 ### If developing on CSUG machines:
 Copy over the project files<br>
@@ -24,5 +26,3 @@ f.close()
 ```
 Run `gcc -g3 -o example/primes example/primes.c`<br>
 Run `python3 xref.py example/primes`
-
-This repository is the ownership of Nate Conroy and Luka Sherman and has been made public for my personal portfolio. It may not be used to violate academic honesty policies.
